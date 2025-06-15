@@ -5,5 +5,36 @@
 </head>
 <body>
     <h1>Welcome to Crypto Trader</h1>
+
+    <h2>Add a Coin</h2>
+    <form method="post" action="/buy">
+        <label>Symbol (e.g. BTC):</label>
+        <input type="text" name="symbol" required>
+        <label>Amount:</label>
+        <input type="number" name="amount" step="any" required>
+        <button type="submit">Buy</button>
+    </form>
+    <h2>Portfolio</h2>
+        {% if portfolio %}
+            <table border="1" cellpadding="5">
+                <tr>
+                    <th>Symbol</th>
+                    <th>Amount</th>
+                    <th>Price (USD)</th>
+                    <th>Value (USD)</th>
+                </tr>
+                {% for coin in portfolio %}
+                <tr>
+                    <td>{{ coin.symbol }}</td>
+                    <td>{{ coin.amount }}</td>
+                    <td>{{ coin.price_usd }}</td>
+                    <td>{{ coin.value_usd }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No coins added yet.</p>
+        {% endif %}
+
 </body>
 </html>
