@@ -36,5 +36,33 @@
             <p>No coins added yet.</p>
         {% endif %}
 
+        <h2>Transaction History</h2>
+
+{% if transactions %}
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Symbol</th>
+        <th>Amount</th>
+        <th>Price (USD)</th>
+        <th>Total Value</th>
+    </tr>
+    {% for tx in transactions %}
+    <tr>
+        <td>{{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td>{{ tx.type }}</td>
+        <td>{{ tx.symbol }}</td>
+        <td>{{ tx.amount }}</td>
+        <td>{{ tx.price_usd }}</td>
+        <td>{{ (tx.amount * tx.price_usd)|round(2) }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No transactions yet.</p>
+{% endif %}
+
+
 </body>
 </html>
