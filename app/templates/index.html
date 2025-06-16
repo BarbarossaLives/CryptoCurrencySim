@@ -3,118 +3,137 @@
 <head>
     <title>Crypto Trader</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        table { border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-        th { background-color: #f2f2f2; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #271b22; }
+        h1, h2 { text-align: center; }
+
+        .block {
+            background: #373c44;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        form { margin-top: 10px; text-align: center; }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #e2e8f0;
+        }
+
         .positive { color: green; }
         .negative { color: red; }
     </style>
+
 </head>
 <body>
     <h1>Welcome to Crypto Trader</h1>
 
-    <h2>Portfolio Summary</h2>
-    <table>
-        <tr>
-            <th>Total Invested</th>
-            <th>Current Value</th>
-            <th>Overall ROI</th>
-        </tr>
-        <tr>
-            <td>${{ total_invested }}</td>
-            <td>${{ total_current }}</td>
-            <td>
-                <span class="{{ 'positive' if overall_roi >= 0 else 'negative' }}">
-                    {{ overall_roi }}%
-                </span>
-            </td>
-        </tr>
-    </table>
-
-{% if top_gainer %}
-    <p><strong>Top Gainer:</strong> {{ top_gainer["symbol"] }} ({{ top_gainer["roi"] }}%)</p>
-{% endif %}
-{% if top_loser %}
-    <p><strong>Biggest Loser:</strong> {{ top_loser["symbol"] }} ({{ top_loser["roi"] }}%)</p>
-{% endif %}
+    <p style="text-align: center;"><a href="/transactions">View Transaction History</a></p>
+    <p style="text-align: center;"><a href="/assistant">View Trading Assistant</a></p>
 
 
-    <h2>Add a Coin</h2>
-    <form method="post" action="/buy">
-        <label>Symbol (e.g. BTC):</label>
-        <input type="text" name="symbol" required>
-        <label>Amount:</label>
-        <input type="number" name="amount" step="any" required>
-        <button type="submit">Buy</button>
-    </form>
+    <div class="block">
+        <h2>Portfolio Summary</h2>
+        <table>
+            <tr>
+                <th>Total Invested</th>
+                <th>Current Value</th>
+                <th>Overall ROI</th>
+            </tr>
+            <tr>
+                <td>${{ total_invested }}</td>
+                <td>${{ total_current }}</td>
+                <td>
+                    <span class="{{ 'positive' if overall_roi >= 0 else 'negative' }}">
+                        {{ overall_roi }}%
+                    </span>
+                </td>
+            </tr>
+        </table>
 
-    <h2>Sell a Coin</h2>
-    <form method="post" action="/sell">
-        <label>Symbol (e.g. BTC):</label>
-        <input type="text" name="symbol" required>
-        <label>Amount:</label>
-        <input type="number" name="amount" step="any" required>
-        <button type="submit">Sell</button>
-    </form>
+        {% if top_gainer %}
+            <p><strong>Top Gainer:</strong> {{ top_gainer["symbol"] }} ({{ top_gainer["roi"] }}%)</p>
+        {% endif %}
+        {% if top_loser %}
+            <p><strong>Biggest Loser:</strong> {{ top_loser["symbol"] }} ({{ top_loser["roi"] }}%)</p>
+        {% endif %}
+    </div>
+
+    <div class="block">
+        <h2>Add a Coin</h2>
+        <form method="post" action="/buy">
+            <label>Symbol (e.g. BTC):</label>
+            <input type="text" name="symbol" required>
+            <label>Amount (USD):</label>
+            <input type="number" name="usd_amount" step="0.01" min="0" required>
+
+            <button type="submit">Buy</button>
+        </form>
+
+        <h2>Sell a Coin</h2>
+        <form method="post" action="/sell">
+            <label>Symbol (e.g. BTC):</label>
+            <input type="text" name="symbol" required>
+            <label>Amount (USD):</label>
+            <input type="number" name="usd_amount" step="0.01" min="0" required>
+
+            <button type="submit">Sell</button>
+        </form>
+    </div>
+    <div class="block">
+        <h2>Portfolio</h2>
+        {% if portfolio %}
+        <table>
+            <tr>
+                <th>Symbol</th>
+                <th>Amount</th>
+                <th>Avg Buy Price (USD)</th>
+                <th>Buy Value (USD)</th>
+                <th>Current Price (USD)</th>
+                <th>Current Value (USD)</th>
+                <th>ROI (%)</th>
+            </tr>
+            {% for coin in portfolio %}
+            <tr>
+                <td>{{ coin["symbol"] }}</td>
+                <td>{{ coin["amount"] }}</td>
+                <td>{{ coin["price_usd"] }}</td>
+                <td>{{ coin["value_usd"] }}</td>
+                <td>{{ coin["current_price"] }}</td>
+                <td>{{ coin["current_value"] }}</td>
+                <td>
+                    <span class="{{ 'positive' if coin['roi'] >= 0 else 'negative' }}">
+                        {{ coin["roi"] }}%
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+            <p>No coins in your portfolio yet.</p>
+        {% endif %}
+    <h3 style="text-align: center;">
+        Total Portfolio Value:
+        {% if total_current is defined %}
+            ${{ total_current| round(2) }}
+        {% else %}
+            $0.00
+        {% endif %}
+    </h3>                                           
 
 
-    <h2>Portfolio</h2>
-    {% if portfolio %}
-    <table>
-        <tr>
-            <th>Symbol</th>
-            <th>Amount</th>
-            <th>Avg Buy Price (USD)</th>
-            <th>Buy Value (USD)</th>
-            <th>Current Price (USD)</th>
-            <th>Current Value (USD)</th>
-            <th>ROI (%)</th>
-        </tr>
-        {% for coin in portfolio %}
-        <tr>
-            <td>{{ coin["symbol"] }}</td>
-            <td>{{ coin["amount"] }}</td>
-            <td>{{ coin["price_usd"] }}</td>
-            <td>{{ coin["value_usd"] }}</td>
-            <td>{{ coin["current_price"] }}</td>
-            <td>{{ coin["current_value"] }}</td>
-            <td>
-                <span class="{{ 'positive' if coin['roi'] >= 0 else 'negative' }}">
-                    {{ coin["roi"] }}%
-                </span>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-        <p>No coins in your portfolio yet.</p>
-    {% endif %}
-
-    <h2>Transaction History</h2>
-    {% if transactions %}
-    <table>
-        <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Symbol</th>
-            <th>Amount</th>
-            <th>Price (USD)</th>
-            <th>Total Value</th>
-        </tr>
-        {% for tx in transactions %}
-        <tr>
-            <td>{{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-            <td>{{ tx.type }}</td>
-            <td>{{ tx.symbol }}</td>
-            <td>{{ tx.amount }}</td>
-            <td>{{ tx.price_usd }}</td>
-            <td>{{ (tx.amount * tx.price_usd)|round(2) }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-        <p>No transactions yet.</p>
-    {% endif %}
+    </div>
 </body>
 </html>

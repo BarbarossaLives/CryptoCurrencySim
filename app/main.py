@@ -9,6 +9,7 @@ from app.services.portfolio import get_portfolio
 from app.services.portfolio import log_transaction
 from app.services.portfolio import get_transactions
 from fastapi import HTTPException
+from fastapi import Form
 
 
 app = FastAPI()
@@ -34,23 +35,80 @@ async def homepage(request: Request):
 
 
 @app.post("/buy")
-async def buy_coin(request: Request, symbol: str = Form(...), amount: float = Form(...)):
+async def buy_coin(request: Request, symbol: str = Form(...), usd_amount: float = Form(...)):
+    symbol = symbol.upper()
     price = await get_price(symbol)
-    add_coin(symbol, amount, price)
-    log_transaction(symbol, amount, price, "buy")
+    coin_amount = usd_amount / price
+
+    add_coin(symbol, coin_amount, price)
+    log_transaction(symbol, coin_amount, price, "buy")
     return RedirectResponse(url="/", status_code=303)
+
 
 @app.post("/sell")
-async def sell_coin(request: Request, symbol: str = Form(...), amount: float = Form(...)):
+async def sell_coin(request: Request, symbol: str = Form(...), usd_amount: float = Form(...)):
     symbol = symbol.upper()
-    coins = await get_portfolio()
+    price = await get_price(symbol)
+    coin_amount = usd_amount / price
 
-    # Check if user has enough
+    portfolio = await get_portfolio()
+    coins = portfolio["coins"]
+
     matching = next((c for c in coins if c["symbol"] == symbol), None)
-    if not matching or matching["amount"] < amount:
+    if not matching or matching["amount"] < coin_amount:
         raise HTTPException(status_code=400, detail="Not enough holdings to sell.")
 
-    price = await get_price(symbol)
-    add_coin(symbol, -amount, price)  # negative amount reduces holdings
-    log_transaction(symbol, -amount, price, "sell")
+    add_coin(symbol, -coin_amount, price)
+    log_transaction(symbol, -coin_amount, price, "sell")
     return RedirectResponse(url="/", status_code=303)
+
+
+
+@app.get("/assistant")
+async def assistant_page(request: Request):
+    return templates.TemplateResponse("assistant.html", {"request": request, "response": None})
+
+@app.post("/assistant")
+async def assistant_query(request: Request, question: str = Form(...)):
+    portfolio_data = await get_portfolio()
+
+    response = "I'm not sure how to answer that yet."
+
+    q = question.lower()
+
+    if "roi" in q:
+        response = f"Your overall ROI is {portfolio_data['overall_roi']}%."
+
+    elif "best" in q or "top" in q:
+        top = portfolio_data["top_gainer"]
+        if top:
+            response = f"Your top performing coin is {top['symbol']} with ROI of {top['roi']}%."
+
+    elif "worst" in q or "loss" in q:
+        low = portfolio_data["top_loser"]
+        if low:
+            response = f"Your worst performing coin is {low['symbol']} with ROI of {low['roi']}%."
+
+    else:
+        # Try coin-specific lookup
+        for coin in portfolio_data["coins"]:
+            if coin["symbol"].lower() in q:
+                response = (
+                    f"{coin['symbol']} has an ROI of {coin['roi']}%, "
+                    f"current value: ${coin['current_value']}."
+                )
+                break
+
+    return templates.TemplateResponse("assistant.html", {
+        "request": request,
+        "response": response
+    })
+
+@app.get("/transactions")
+def transactions_page(request: Request):
+    txs = get_transactions()
+    return templates.TemplateResponse("transactions.html", {
+        "request": request,
+        "transactions": txs
+    })
+

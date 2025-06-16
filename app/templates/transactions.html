@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transaction History</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; }
+        h1 { text-align: center; }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Transaction History</h1>
+    <p style="text-align: center;"><a href="/">Return Home</a></p>
+
+    {% if transactions %}
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Symbol</th>
+            <th>Amount</th>
+            <th>Price (USD)</th>
+            <th>Total Value</th>
+        </tr>
+        {% for tx in transactions %}
+        <tr>
+            <td>{{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ tx.type }}</td>
+            <td>{{ tx.symbol }}</td>
+            <td>{{ tx.amount }}</td>
+            <td>{{ tx.price_usd }}</td>
+            <td>{{ (tx.amount * tx.price_usd)|round(2) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No transactions yet.</p>
+    {% endif %}
+</body>
+</html>
