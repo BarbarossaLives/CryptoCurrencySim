@@ -14,6 +14,32 @@
 <body>
     <h1>Welcome to Crypto Trader</h1>
 
+    <h2>Portfolio Summary</h2>
+    <table>
+        <tr>
+            <th>Total Invested</th>
+            <th>Current Value</th>
+            <th>Overall ROI</th>
+        </tr>
+        <tr>
+            <td>${{ total_invested }}</td>
+            <td>${{ total_current }}</td>
+            <td>
+                <span class="{{ 'positive' if overall_roi >= 0 else 'negative' }}">
+                    {{ overall_roi }}%
+                </span>
+            </td>
+        </tr>
+    </table>
+
+{% if top_gainer %}
+    <p><strong>Top Gainer:</strong> {{ top_gainer["symbol"] }} ({{ top_gainer["roi"] }}%)</p>
+{% endif %}
+{% if top_loser %}
+    <p><strong>Biggest Loser:</strong> {{ top_loser["symbol"] }} ({{ top_loser["roi"] }}%)</p>
+{% endif %}
+
+
     <h2>Add a Coin</h2>
     <form method="post" action="/buy">
         <label>Symbol (e.g. BTC):</label>

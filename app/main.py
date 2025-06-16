@@ -18,13 +18,20 @@ templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/")
 async def homepage(request: Request):
-    coins = await get_portfolio()
+    portfolio_data = await get_portfolio()
     transactions = get_transactions()
+
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "portfolio": coins,
+        "portfolio": portfolio_data["coins"],
+        "total_invested": portfolio_data["total_invested"],
+        "total_current": portfolio_data["total_current"],
+        "overall_roi": portfolio_data["overall_roi"],
+        "top_gainer": portfolio_data["top_gainer"],
+        "top_loser": portfolio_data["top_loser"],
         "transactions": transactions
     })
+
 
 @app.post("/buy")
 async def buy_coin(request: Request, symbol: str = Form(...), amount: float = Form(...)):

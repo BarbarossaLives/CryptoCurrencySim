@@ -45,7 +45,28 @@ async def get_portfolio():
             "roi": roi
         })
 
-    return portfolio
+    # After portfolio list is built
+    total_invested = sum(c["value_usd"] for c in portfolio)
+    total_current = sum(c["current_value"] for c in portfolio)
+
+    overall_roi = (
+    round(((total_current - total_invested) / total_invested) * 100, 2)
+    if total_invested > 0 else 0.0
+)
+
+    top_gainer = max(portfolio, key=lambda c: c["roi"], default=None)
+    top_loser = min(portfolio, key=lambda c: c["roi"], default=None)
+
+
+    return {
+        "coins": portfolio,
+        "total_invested": round(total_invested, 2),
+        "total_current": round(total_current, 2),
+        "overall_roi": overall_roi,
+        "top_gainer": top_gainer,
+        "top_loser": top_loser
+    }
+
 
 def log_transaction(symbol: str, amount: float, price: float, tx_type: str):
     db = SessionLocal()
