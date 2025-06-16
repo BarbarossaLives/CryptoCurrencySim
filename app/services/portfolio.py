@@ -1,5 +1,8 @@
 from app.models.db import Coin, SessionLocal
 from app.models.db import Transaction
+from sqlalchemy import func
+from app.services.market_data import get_price
+import asyncio
 
 def add_coin(symbol: str, amount: float, price: float):
     value = round(amount * price, 2)
@@ -15,11 +18,34 @@ def add_coin(symbol: str, amount: float, price: float):
     db.refresh(coin)
     db.close()
 
-def get_portfolio():
+async def get_portfolio():
     db = SessionLocal()
-    coins = db.query(Coin).all()
+    result = db.query(
+        Coin.symbol,
+        func.sum(Coin.amount).label("total_amount"),
+        func.avg(Coin.price_usd).label("avg_price"),
+        func.sum(Coin.value_usd).label("total_value")
+    ).group_by(Coin.symbol).all()
     db.close()
-    return coins
+
+    portfolio = []
+
+    for row in result:
+        current_price = await get_price(row.symbol)
+        current_value = round(row.total_amount * current_price, 2)
+        roi = round(((current_price - row.avg_price) / row.avg_price) * 100, 2)
+
+        portfolio.append({
+            "symbol": row.symbol,
+            "amount": round(row.total_amount, 8),
+            "price_usd": round(row.avg_price, 2),
+            "value_usd": round(row.total_value, 2),
+            "current_price": round(current_price, 2),
+            "current_value": current_value,
+            "roi": roi
+        })
+
+    return portfolio
 
 def log_transaction(symbol: str, amount: float, price: float, tx_type: str):
     db = SessionLocal()

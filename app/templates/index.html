@@ -2,6 +2,14 @@
 <html>
 <head>
     <title>Crypto Trader</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        table { border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .positive { color: green; }
+        .negative { color: red; }
+    </style>
 </head>
 <body>
     <h1>Welcome to Crypto Trader</h1>
@@ -14,55 +22,73 @@
         <input type="number" name="amount" step="any" required>
         <button type="submit">Buy</button>
     </form>
+
+    <h2>Sell a Coin</h2>
+    <form method="post" action="/sell">
+        <label>Symbol (e.g. BTC):</label>
+        <input type="text" name="symbol" required>
+        <label>Amount:</label>
+        <input type="number" name="amount" step="any" required>
+        <button type="submit">Sell</button>
+    </form>
+
+
     <h2>Portfolio</h2>
-        {% if portfolio %}
-            <table border="1" cellpadding="5">
-                <tr>
-                    <th>Symbol</th>
-                    <th>Amount</th>
-                    <th>Price (USD)</th>
-                    <th>Value (USD)</th>
-                </tr>
-                {% for coin in portfolio %}
-                <tr>
-                    <td>{{ coin.symbol }}</td>
-                    <td>{{ coin.amount }}</td>
-                    <td>{{ coin.price_usd }}</td>
-                    <td>{{ coin.value_usd }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-        {% else %}
-            <p>No coins added yet.</p>
-        {% endif %}
+    {% if portfolio %}
+    <table>
+        <tr>
+            <th>Symbol</th>
+            <th>Amount</th>
+            <th>Avg Buy Price (USD)</th>
+            <th>Buy Value (USD)</th>
+            <th>Current Price (USD)</th>
+            <th>Current Value (USD)</th>
+            <th>ROI (%)</th>
+        </tr>
+        {% for coin in portfolio %}
+        <tr>
+            <td>{{ coin["symbol"] }}</td>
+            <td>{{ coin["amount"] }}</td>
+            <td>{{ coin["price_usd"] }}</td>
+            <td>{{ coin["value_usd"] }}</td>
+            <td>{{ coin["current_price"] }}</td>
+            <td>{{ coin["current_value"] }}</td>
+            <td>
+                <span class="{{ 'positive' if coin['roi'] >= 0 else 'negative' }}">
+                    {{ coin["roi"] }}%
+                </span>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No coins in your portfolio yet.</p>
+    {% endif %}
 
-        <h2>Transaction History</h2>
-
-{% if transactions %}
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Date</th>
-        <th>Type</th>
-        <th>Symbol</th>
-        <th>Amount</th>
-        <th>Price (USD)</th>
-        <th>Total Value</th>
-    </tr>
-    {% for tx in transactions %}
-    <tr>
-        <td>{{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-        <td>{{ tx.type }}</td>
-        <td>{{ tx.symbol }}</td>
-        <td>{{ tx.amount }}</td>
-        <td>{{ tx.price_usd }}</td>
-        <td>{{ (tx.amount * tx.price_usd)|round(2) }}</td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<p>No transactions yet.</p>
-{% endif %}
-
-
+    <h2>Transaction History</h2>
+    {% if transactions %}
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Symbol</th>
+            <th>Amount</th>
+            <th>Price (USD)</th>
+            <th>Total Value</th>
+        </tr>
+        {% for tx in transactions %}
+        <tr>
+            <td>{{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ tx.type }}</td>
+            <td>{{ tx.symbol }}</td>
+            <td>{{ tx.amount }}</td>
+            <td>{{ tx.price_usd }}</td>
+            <td>{{ (tx.amount * tx.price_usd)|round(2) }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No transactions yet.</p>
+    {% endif %}
 </body>
 </html>
