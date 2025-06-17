@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎮 Game Dashboard - Crypto Trading Simulator</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .game-header {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            color: #000;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 16px rgba(74, 222, 128, 0.3);
+        }
+        
+        .progress-bar {
+            background: #374151;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        
+        .achievement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .achievement {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            transition: all 0.3s ease;
+        }
+        
+        .achievement.unlocked {
+            border-color: #4ade80;
+            background: linear-gradient(135deg, #065f46, #047857);
+            box-shadow: 0 4px 8px rgba(74, 222, 128, 0.2);
+        }
+        
+        .achievement-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .achievement.unlocked .achievement-icon {
+            animation: bounce 1s ease-in-out;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .game-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #374151;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #4b5563;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4ade80;
+        }
+        
+        .new-game-form {
+            background: #1f2937;
+            padding: 25px;
+            border-radius: 12px;
+            border: 2px solid #4ade80;
+        }
+        
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .mode-option {
+            background: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #4b5563;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .mode-option:hover {
+            border-color: #4ade80;
+            background: #4b5563;
+        }
+        
+        .mode-option.selected {
+            border-color: #4ade80;
+            background: linear-gradient(135deg, #065f46, #047857);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Crypto Trading Game</h1>
+        
+        <div class="nav-links">
+            <a href="/">🏠 Portfolio</a>
+            <a href="/assistant">🤖 AI Assistant</a>
+            <a href="/game/leaderboard">🏆 Leaderboard</a>
+            <a href="/transactions">📊 Transactions</a>
+        </div>
+
+        {% if game_stats %}
+        <!-- Active Game Dashboard -->
+        <div class="game-header">
+            <h2>🚀 {{ game_stats.game.player_name }}'s Trading Challenge</h2>
+            <p style="margin: 10px 0; font-size: 1.2rem;">{{ game_stats.win_description }}</p>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ game_stats.progress_percentage }}%"></div>
+            </div>
+            <p style="margin: 10px 0;">Progress: {{ "%.1f"|format(game_stats.progress_percentage) }}%</p>
+            
+            {% if game_stats.is_winning %}
+            <div style="background: #22c55e; color: #000; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                🎉 <strong>CONGRATULATIONS! YOU WON!</strong> 🎉
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Game Statistics -->
+        <div class="block">
+            <h2>📊 Game Statistics</h2>
+            <div class="game-stats">
+                <div class="stat-card">
+                    <h3>Current ROI</h3>
+                    <div class="stat-value {{ 'positive' if game_stats.game.current_roi >= 0 else 'negative' }}">
+                        {{ "%.2f"|format(game_stats.game.current_roi) }}%
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Net Worth</h3>
+                    <div class="stat-value">${{ "%.2f"|format(game_stats.game.current_net_worth) }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Trades</h3>
+                    <div class="stat-value">{{ game_stats.game.total_trades }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Win Rate</h3>
+                    <div class="stat-value">
+                        {% if game_stats.game.total_trades > 0 %}
+                            {{ "%.1f"|format((game_stats.game.profitable_trades / game_stats.game.total_trades) * 100) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>Days Played</h3>
+                    <div class="stat-value">{{ game_stats.days_since_start }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Difficulty</h3>
+                    <div class="stat-value" style="font-size: 1.2rem;">{{ game_stats.game.difficulty_level }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="block">
+            <h2>🏆 Achievements ({{ game_stats.achievements.unlocked }}/{{ game_stats.achievements.total }})</h2>
+            <div class="achievement-grid">
+                {% for achievement in game_stats.achievements.list %}
+                <div class="achievement {{ 'unlocked' if achievement.is_unlocked else '' }}">
+                    <div class="achievement-icon">{{ achievement.icon }}</div>
+                    <h4 style="margin: 0 0 5px 0; color: {{ '#4ade80' if achievement.is_unlocked else '#9ca3af' }};">
+                        {{ achievement.name }}
+                    </h4>
+                    <p style="margin: 0; font-size: 14px; color: #d1d5db;">{{ achievement.description }}</p>
+                    {% if achievement.is_unlocked %}
+                    <div style="margin-top: 10px; font-size: 12px; color: #86efac;">
+                        ✅ Unlocked {{ achievement.unlocked_at.strftime('%m/%d') if achievement.unlocked_at else '' }}
+                    </div>
+                    {% else %}
+                    <div style="margin-top: 10px; font-size: 12px; color: #6b7280;">
+                        🔒 Locked
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="block">
+            <h2>🚀 Quick Actions</h2>
+            <div class="nav-links">
+                <a href="/" class="btn">🛒 Make a Trade</a>
+                <a href="/assistant" class="btn btn-secondary">🤖 Get AI Advice</a>
+                <a href="/visualize" class="btn btn-secondary">📈 View Charts</a>
+                <form method="post" action="/game/start" style="display: inline;" onsubmit="return confirm('⚠️ Starting a new game will clear your current portfolio and transaction history. Are you sure?')">
+                    <input type="hidden" name="player_name" value="{{ game_stats.game.player_name }}">
+                    <input type="hidden" name="mode" value="roi_target">
+                    <input type="hidden" name="difficulty" value="Normal">
+                    <button type="submit" class="btn btn-danger">🔄 Start New Game</button>
+                </form>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- New Game Setup -->
+        <div class="block">
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">🎮</div>
+                <h2 style="color: #4ade80; margin-bottom: 15px;">Welcome to Crypto Trading Game!</h2>
+                <p style="color: #d1d5db; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    Test your trading skills in this exciting cryptocurrency simulation! Start with virtual money, 
+                    make smart trades with AI assistance, and compete to reach your goals.
+                </p>
+            </div>
+        </div>
+
+        <div class="new-game-form">
+            <h2 style="text-align: center; color: #4ade80; margin-bottom: 25px;">🚀 Start Your Trading Journey</h2>
+
+            <div style="background: #374151; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #fbbf24;">
+                <p style="margin: 0; color: #fbbf24; font-size: 14px;">
+                    ⚠️ <strong>Note:</strong> Starting a new game will clear your current portfolio and transaction history to give you a fresh start with your chosen starting capital.
+                </p>
+            </div>
+
+            <form method="post" action="/game/start" id="gameForm" onsubmit="return confirm('🎮 Ready to start your trading challenge? This will clear your current portfolio and give you fresh starting capital. Continue?')">
+                <div class="form-group">
+                    <label for="player_name">👤 Player Name:</label>
+                    <input type="text" id="player_name" name="player_name" value="Anonymous Trader" required>
+                </div>
+
+                <div class="form-group">
+                    <label>🎯 Game Mode:</label>
+                    <div class="mode-selector">
+                        <div class="mode-option selected" data-mode="roi_target">
+                            <h4>📈 ROI Challenge</h4>
+                            <p>Reach 100% ROI</p>
+                            <small>Double your money!</small>
+                        </div>
+                        <div class="mode-option" data-mode="net_worth_target">
+                            <h4>💰 Net Worth Goal</h4>
+                            <p>Reach $15,000</p>
+                            <small>Triple your starting capital!</small>
+                        </div>
+                        <div class="mode-option" data-mode="time_challenge">
+                            <h4>⏰ Time Challenge</h4>
+                            <p>Stay profitable for 14 days</p>
+                            <small>Consistency is key!</small>
+                        </div>
+                    </div>
+                    <input type="hidden" name="mode" id="selected_mode" value="roi_target">
+                </div>
+
+                <div class="form-group">
+                    <label for="difficulty">⚡ Difficulty:</label>
+                    <select name="difficulty" id="difficulty" style="padding: 12px; border: 1px solid #4b5563; border-radius: 8px; background: #1f2937; color: #fff;">
+                        <option value="Easy">🟢 Easy - $7,500 starting capital</option>
+                        <option value="Normal" selected>🟡 Normal - $5,000 starting capital</option>
+                        <option value="Hard">🟠 Hard - $3,000 starting capital</option>
+                        <option value="Expert">🔴 Expert - $2,000 starting capital</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" style="width: 100%; margin-top: 20px; font-size: 1.2rem;">
+                    🎮 Start Game
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Mode selection
+        document.querySelectorAll('.mode-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('selected_mode').value = this.dataset.mode;
+            });
+        });
+
+        // Form submission
+        document.getElementById('gameForm')?.addEventListener('submit', function() {
+            const button = this.querySelector('button[type="submit"]');
+            button.disabled = true;
+            button.textContent = '🎮 Starting Game...';
+        });
+    </script>
+</body>
+</html>

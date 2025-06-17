@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>📈 Portfolio Visualization - Crypto Trading Simulator</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            background: #374151;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid #4b5563;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Portfolio Visualization</h1>
+        
+        <div class="nav-links">
+            <a href="/">🏠 Return Home</a>
+            <a href="/assistant">🤖 AI Assistant</a>
+            <a href="/transactions">📊 Transaction History</a>
+        </div>
+
+        {% if portfolio.coins %}
+        <!-- Portfolio Overview -->
+        <div class="block">
+            <h2>💼 Portfolio Overview</h2>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>Total Holdings</h3>
+                    <div class="value">{{ portfolio.coins|length }}</div>
+                    <div style="color: #9ca3af; font-size: 14px;">Different Coins</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Value</h3>
+                    <div class="value">${{ "%.2f"|format(portfolio.total_current) }}</div>
+                    <div style="color: #9ca3af; font-size: 14px;">Current Worth</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Overall ROI</h3>
+                    <div class="value {{ 'positive' if portfolio.overall_roi >= 0 else 'negative' }}">
+                        {{ "%.2f"|format(portfolio.overall_roi) }}%
+                    </div>
+                    <div style="color: #9ca3af; font-size: 14px;">Return on Investment</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="chart-grid">
+            <!-- Portfolio Distribution -->
+            <div class="chart-container">
+                <h3 style="text-align: center; color: #4ade80; margin-bottom: 20px;">
+                    🥧 Portfolio Distribution
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- ROI Performance -->
+            <div class="chart-container">
+                <h3 style="text-align: center; color: #60a5fa; margin-bottom: 20px;">
+                    📊 ROI Performance
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holdings Table -->
+        <div class="block">
+            <h2>📋 Detailed Holdings</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>💰 Symbol</th>
+                            <th>📦 Amount</th>
+                            <th>💎 Current Value</th>
+                            <th>📊 ROI</th>
+                            <th>📈 Percentage of Portfolio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for coin in portfolio.coins %}
+                        <tr>
+                            <td><strong>{{ coin.symbol }}</strong></td>
+                            <td>{{ "%.8f"|format(coin.amount) }}</td>
+                            <td>${{ "%.2f"|format(coin.current_value) }}</td>
+                            <td>
+                                <span class="{{ 'positive' if coin.roi >= 0 else 'negative' }}">
+                                    {{ "%.2f"|format(coin.roi) }}%
+                                </span>
+                            </td>
+                            <td>{{ "%.1f"|format((coin.current_value / portfolio.total_current) * 100) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="block">
+            <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">📈</div>
+                <h3 style="color: #9ca3af; margin-bottom: 15px;">No portfolio data to visualize!</h3>
+                <p style="color: #6b7280; margin-bottom: 25px;">Start building your crypto portfolio to see beautiful charts and analytics here.</p>
+                <div style="background: #374151; padding: 20px; border-radius: 8px; max-width: 400px; margin: 0 auto;">
+                    <p style="margin: 0; color: #d1d5db; font-size: 14px;">
+                        💡 <strong>Tip:</strong> Buy some cryptocurrencies first, then come back to see your portfolio visualized!
+                    </p>
+                </div>
+                <div style="margin-top: 30px;">
+                    <a href="/" class="btn">🛒 Start Trading</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="block">
+            <h2>🚀 Quick Actions</h2>
+            <div class="nav-links">
+                <a href="/" class="btn">🛒 Make a Trade</a>
+                <a href="/assistant" class="btn btn-secondary">🤖 Ask AI Assistant</a>
+                <a href="/transactions" class="btn btn-secondary">📋 View Transactions</a>
+            </div>
+        </div>
+    </div>
+
+    {% if portfolio.coins %}
+    <script>
+        // Portfolio data
+        const coins = {{ portfolio.coins | tojson }};
+        
+        const labels = coins.map(c => c.symbol);
+        const values = coins.map(c => c.current_value);
+        const roi = coins.map(c => c.roi);
+
+        // Chart.js default configuration for dark theme
+        Chart.defaults.color = '#e5e7eb';
+        Chart.defaults.borderColor = '#374151';
+
+        // Portfolio Distribution Pie Chart
+        new Chart(document.getElementById('pieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        '#4ade80', '#60a5fa', '#f59e0b', '#ef4444', '#8b5cf6',
+                        '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#6366f1'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#1f2937'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            color: '#e5e7eb'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const percentage = ((context.parsed / values.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                                return `${context.label}: $${context.parsed.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // ROI Performance Bar Chart
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ROI (%)',
+                    data: roi,
+                    backgroundColor: roi.map(r => r >= 0 ? '#22c55e' : '#ef4444'),
+                    borderColor: roi.map(r => r >= 0 ? '#16a34a' : '#dc2626'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed.y.toFixed(2)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#374151'
+                        },
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#374151'
+                        },
+                        ticks: {
+                            color: '#9ca3af'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

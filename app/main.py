@@ -1,21 +1,33 @@
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from fastapi import Form
 from app.services.market_data import get_price
 from app.services.portfolio import add_coin
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from app.models.db import Base, engine
+from app.models.game import GameSession, Achievement, GameLeaderboard
 from app.services.portfolio import get_portfolio
 from app.services.portfolio import log_transaction
 from app.services.portfolio import get_transactions
+from app.services.llm_service import llm_service
+from app.services.game_service import game_service
+from app.models.game import GameMode
 from fastapi import HTTPException
 from fastapi import Form
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 app = FastAPI()
 Base.metadata.create_all(bind=engine)
 
 templates = Jinja2Templates(directory="app/templates")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 @app.get("/")
 async def homepage(request: Request):
@@ -42,6 +54,11 @@ async def buy_coin(request: Request, symbol: str = Form(...), usd_amount: float 
 
     add_coin(symbol, coin_amount, price)
     log_transaction(symbol, coin_amount, price, "buy")
+
+    # Update game progress
+    portfolio_data = await get_portfolio()
+    game_service.update_game_progress(portfolio_data, {"profit": 0})
+
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -60,6 +77,11 @@ async def sell_coin(request: Request, symbol: str = Form(...), usd_amount: float
 
     add_coin(symbol, -coin_amount, price)
     log_transaction(symbol, -coin_amount, price, "sell")
+
+    # Update game progress
+    portfolio_data = await get_portfolio()
+    game_service.update_game_progress(portfolio_data, {"profit": usd_amount})
+
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -71,37 +93,21 @@ async def assistant_page(request: Request):
 @app.post("/assistant")
 async def assistant_query(request: Request, question: str = Form(...)):
     portfolio_data = await get_portfolio()
+    transactions = get_transactions()
+    game_stats = game_service.get_game_stats()
 
-    response = "I'm not sure how to answer that yet."
+    # Get AI-powered response with game context
+    response = await llm_service.get_trading_advice(question, portfolio_data, transactions, game_stats)
 
-    q = question.lower()
-
-    if "roi" in q:
-        response = f"Your overall ROI is {portfolio_data['overall_roi']}%."
-
-    elif "best" in q or "top" in q:
-        top = portfolio_data["top_gainer"]
-        if top:
-            response = f"Your top performing coin is {top['symbol']} with ROI of {top['roi']}%."
-
-    elif "worst" in q or "loss" in q:
-        low = portfolio_data["top_loser"]
-        if low:
-            response = f"Your worst performing coin is {low['symbol']} with ROI of {low['roi']}%."
-
-    else:
-        # Try coin-specific lookup
-        for coin in portfolio_data["coins"]:
-            if coin["symbol"].lower() in q:
-                response = (
-                    f"{coin['symbol']} has an ROI of {coin['roi']}%, "
-                    f"current value: ${coin['current_value']}."
-                )
-                break
+    # Record AI interaction for game
+    if game_stats:
+        game_service.record_ai_interaction(followed_suggestion=True)
 
     return templates.TemplateResponse("assistant.html", {
         "request": request,
-        "response": response
+        "response": response,
+        "question": question,
+        "game_stats": game_stats
     })
 
 @app.get("/transactions")
@@ -110,5 +116,55 @@ def transactions_page(request: Request):
     return templates.TemplateResponse("transactions.html", {
         "request": request,
         "transactions": txs
+    })
+
+@app.get("/visualize", response_class=HTMLResponse)
+async def visualize_portfolio(request: Request):
+    portfolio_data = await get_portfolio()
+    return templates.TemplateResponse("visualize.html", {
+        "request": request,
+        "portfolio": portfolio_data
+    })
+
+
+@app.get("/game", response_class=HTMLResponse)
+async def game_dashboard(request: Request):
+    game_stats = game_service.get_game_stats()
+    portfolio_data = await get_portfolio()
+
+    return templates.TemplateResponse("game.html", {
+        "request": request,
+        "game_stats": game_stats,
+        "portfolio": portfolio_data
+    })
+
+
+@app.post("/game/start")
+async def start_new_game(
+    request: Request,
+    player_name: str = Form("Anonymous Trader"),
+    mode: str = Form("roi_target"),
+    difficulty: str = Form("Normal")
+):
+    # Convert string mode to enum
+    game_mode = GameMode.ROI_TARGET
+    if mode == "net_worth_target":
+        game_mode = GameMode.NET_WORTH_TARGET
+    elif mode == "time_challenge":
+        game_mode = GameMode.TIME_CHALLENGE
+
+    # Start new game
+    game_service.start_new_game(player_name, game_mode, difficulty)
+
+    return RedirectResponse(url="/game", status_code=303)
+
+
+@app.get("/game/leaderboard", response_class=HTMLResponse)
+async def game_leaderboard(request: Request):
+    leaderboard = game_service.get_leaderboard(limit=20)
+
+    return templates.TemplateResponse("leaderboard.html", {
+        "request": request,
+        "leaderboard": leaderboard
     })
 

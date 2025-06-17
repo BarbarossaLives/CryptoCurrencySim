@@ -1,27 +1,252 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Crypto Assistant</title>
+    <title>AI Crypto Trading Assistant</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        textarea { width: 100%; height: 80px; }
-        .response-box { margin-top: 20px; padding: 15px; border: 1px solid #ccc; background: #f9f9f9; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #271b22;
+            color: #fff;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4ade80;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .nav-link {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-link a {
+            color: #60a5fa;
+            text-decoration: none;
+            padding: 8px 16px;
+            border: 1px solid #60a5fa;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-link a:hover {
+            background: #60a5fa;
+            color: #fff;
+        }
+
+        .form-container {
+            background: #373c44;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #e5e7eb;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #4b5563;
+            border-radius: 5px;
+            background: #1f2937;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4ade80;
+            box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+        }
+
+        .submit-btn {
+            background: #4ade80;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover {
+            background: #22c55e;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .conversation {
+            margin-top: 20px;
+        }
+
+        .question-box {
+            background: #1e40af;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .question-box strong {
+            color: #93c5fd;
+        }
+
+        .response-box {
+            background: #065f46;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #4ade80;
+            line-height: 1.6;
+        }
+
+        .response-box strong {
+            color: #86efac;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #9ca3af;
+            margin-top: 10px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .examples {
+            background: #374151;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .examples h3 {
+            color: #fbbf24;
+            margin-top: 0;
+        }
+
+        .example-question {
+            background: #4b5563;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 14px;
+        }
+
+        .example-question:hover {
+            background: #6b7280;
+        }
     </style>
 </head>
 <body>
-    <h1>Crypto Assistant</h1>
-    <p style="text-align: center;"><a href="/">Return Home</a></p>
-    <form method="post" action="/assistant">
-        <label>Ask a question:</label><br>
-        <textarea name="question" required></textarea><br>
-        <button type="submit">Ask</button>
-    </form>
+    <h1>🤖 AI Crypto Trading Assistant</h1>
+    <p class="subtitle">Get personalized insights about your portfolio powered by AI</p>
 
-    {% if response %}
-    <div class="response-box">
-        <strong>Assistant says:</strong>
-        <p>{{ response }}</p>
+    <div class="nav-links">
+        <a href="/">🏠 Portfolio</a>
+        <a href="/game">🎮 Game Dashboard</a>
+        <a href="/transactions">📊 Transactions</a>
+    </div>
+
+    {% if game_stats %}
+    <!-- Game Progress Banner -->
+    <div style="background: linear-gradient(135deg, #4ade80, #22c55e); color: #000; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+        <h3 style="margin: 0 0 10px 0;">🎮 {{ game_stats.win_description }}</h3>
+        <div style="background: rgba(0,0,0,0.2); border-radius: 10px; height: 15px; margin: 10px 0;">
+            <div style="background: #000; height: 100%; border-radius: 10px; width: {{ game_stats.progress_percentage }}%; transition: width 0.5s ease;"></div>
+        </div>
+        <p style="margin: 5px 0;">Progress: {{ "%.1f"|format(game_stats.progress_percentage) }}% | ROI: {{ "%.1f"|format(game_stats.game.current_roi) }}% | Achievements: {{ game_stats.achievements.unlocked }}/{{ game_stats.achievements.total }}</p>
     </div>
     {% endif %}
+
+    <div class="form-container">
+        <form method="post" action="/assistant" id="assistantForm">
+            <label for="question">Ask me anything about your crypto portfolio:</label>
+            <textarea name="question" id="question" placeholder="e.g., Should I buy more Bitcoin? What's my best performing coin? How can I diversify my portfolio?" required>{% if question %}{{ question }}{% endif %}</textarea>
+            <button type="submit" class="submit-btn" id="submitBtn">Ask Assistant</button>
+            <div class="loading" id="loading">🤔 Thinking... This may take a few seconds</div>
+        </form>
+    </div>
+
+    {% if response %}
+    <div class="conversation">
+        {% if question %}
+        <div class="question-box">
+            <strong>You asked:</strong>
+            <p>{{ question }}</p>
+        </div>
+        {% endif %}
+
+        <div class="response-box">
+            <strong>🤖 AI Assistant:</strong>
+            <div>{{ response | replace('\n', '<br>') | safe }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not response %}
+    <div class="examples">
+        <h3>💡 Try asking:</h3>
+        <div class="example-question" onclick="fillQuestion('What is my overall portfolio performance?')">
+            "What is my overall portfolio performance?"
+        </div>
+        <div class="example-question" onclick="fillQuestion('Which coin should I sell first?')">
+            "Which coin should I sell first?"
+        </div>
+        <div class="example-question" onclick="fillQuestion('How can I improve my portfolio diversification?')">
+            "How can I improve my portfolio diversification?"
+        </div>
+        <div class="example-question" onclick="fillQuestion('What are the current market trends for my holdings?')">
+            "What are the current market trends for my holdings?"
+        </div>
+        <div class="example-question" onclick="fillQuestion('Should I buy more of my best performing coin?')">
+            "Should I buy more of my best performing coin?"
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        function fillQuestion(text) {
+            document.getElementById('question').value = text;
+            document.getElementById('question').focus();
+        }
+
+        document.getElementById('assistantForm').addEventListener('submit', function() {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'Processing...';
+            document.getElementById('loading').classList.add('show');
+        });
+    </script>
 </body>
 </html>
